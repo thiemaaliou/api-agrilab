@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use App\User as SessionUser;
 
 class UserController extends Controller 
 {
@@ -49,6 +50,11 @@ class UserController extends Controller
         $user->phone =  $request->phone;
         $user->password =  Hash::make($request->password);
         $user->save();
+        $session = SessionUser::create([
+            'name' => $request->firstname.' '.$request->lastname,
+            'email' => $request->login,
+            'password' => $user->password,
+        ]);
         Db::commit();
         return $this->successResponse($user, "Utilisateur ajouté avec succès");
     }catch(\Exception $e){

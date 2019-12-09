@@ -4,6 +4,12 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use App\Models\User;
 
 class LoginController extends Controller
 {
@@ -34,6 +40,59 @@ class LoginController extends Controller
      */
     public function __construct()
     {
-        $this->middleware('guest')->except('logout');
+        // $this->middleware('guest')->except('logout');
     }
+
+    public function login(Request $request){
+
+        $request->validate([
+            'email' => 'required|string|email',
+            'password' => 'required|string'
+        ]);
+
+        $credentials = request(['email', 'password']);
+
+        if(!Auth::attempt($credentials))
+            return response()->json(['message' => 'Unauthorized'], 401);
+
+        $user = $request->user();
+
+        $tokenResult = $user->createToken('Personal Access Token');
+
+        $token = $tokenResult->token;
+       
+        $token->save();
+
+        $access_token = array('access_token' => $tokenResult->accessToken, 'token_type' => 'Bearer',
+            'expires_at' => $tokenResult->token->expires_at);
+        
+       
+
+        return $this->successResponse($access_token, "Connexion reussie");
+
+    }
+
+    /**
+     * Logout user (Revoke the token)
+     *
+     * @return [string] message
+     */
+    public function logout(Request $request)
+    {
+        $request->user()->token()->revoke();
+        return response()->json([
+            'message' => 'Successfully logged out'
+        ]);
+    }
+  
+    /**
+     * Get the authenticated User
+     *
+     * @return [json] user object
+     */
+    public function user(Request $request)
+    {
+        return response()->json($request->user());
+    }
+
 }
